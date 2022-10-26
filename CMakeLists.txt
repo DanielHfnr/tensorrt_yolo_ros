@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  geometry_msgs
+  message_generation
   tensorrt_base
 )
 
@@ -20,6 +22,19 @@ message("-- CUDA include dirs: ${CUDA_INCLUDE_DIRS}")
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
+
+add_message_files(
+  FILES
+  BoundingBox2D.msg
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+   geometry_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -47,6 +62,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${CUDA_INCLUDE_DIRS}
+  ${tensorrt_base_INCLUDE_DIRS}  
 )
 
 ## Declare a C++ library

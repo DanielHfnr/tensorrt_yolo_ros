@@ -1,0 +1,5 @@
+<launch>
+  <param name="yolo_onnx_model" value="$(find tensorrt_yolo)/models/yolo.onnx" type="str" />
+
+  <node name="tensorrt_yolo" pkg="tensorrt_yolo" type="tensorrt_yolo_node" />
+</launch>
