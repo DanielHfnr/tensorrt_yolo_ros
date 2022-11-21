@@ -1,5 +1,17 @@
 <launch>
-  <param name="yolo_onnx_model" value="$(find tensorrt_yolo)/models/yolo.onnx" type="str" />
+  <arg name="output" default="screen"/>
+  
+  <node name="tensorrt_yolo" pkg="tensorrt_yolo" type="tensorrt_yolo_node" output="$(arg output)">
+      <param name="yolo_onnx_model" value="$(find tensorrt_yolo)/models/yolov7-tiny.onnx" type="str" />
+      <param name="class_labels_file" value="$(find tensorrt_yolo)/models/coco_classes.txt" type="str" />
 
-  <node name="tensorrt_yolo" pkg="tensorrt_yolo" type="tensorrt_yolo_node" />
+      <param name="device" value="GPU" type="str" />
+      <param name="precision" value="FP32" type="str" />
+      <param name="allow_gpu_fallback" value="true" type="bool" />
+
+
+      <param name="image_topic" value="/camera/image_raw" type="str" />
+      <param name="bounding_boxes_topic" value="/yolo/bounding_boxes" type="str" />
+
+  </node>
 </launch>

@@ -11,11 +11,15 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  geometry_msgs
+  sensor_msgs
+  vision_msgs
   message_generation
+  cv_bridge
+  image_transport
   tensorrt_base
 )
 
+find_package(OpenCV)
 find_package(CUDA REQUIRED)
 message("-- CUDA version: ${CUDA_VERSION}")
 message("-- CUDA include dirs: ${CUDA_INCLUDE_DIRS}")
@@ -23,18 +27,6 @@ message("-- CUDA include dirs: ${CUDA_INCLUDE_DIRS}")
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
-
-add_message_files(
-  FILES
-  BoundingBox2D.msg
-)
-
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs
-   geometry_msgs
-)
 
 ###################################
 ## catkin specific configuration ##
@@ -65,21 +57,16 @@ include_directories(
   ${tensorrt_base_INCLUDE_DIRS}  
 )
 
-## Declare a C++ library
-add_library(${PROJECT_NAME}
-   src/TensorrtYolo.cpp
-)
-
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/main.cpp src/TensorrtYoloNode.cpp)
+add_executable(${PROJECT_NAME}_node src/main.cpp src/TensorrtYolo.cpp src/TensorrtYoloNode.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
-  ${PROJECT_NAME}
   ${tensorrt_base_LIBRARIES}
+  ${CUDA_LIBRARIES}
 )
 
 
