@@ -76,14 +76,13 @@ uint32_t TensorrtYolo::Detect(cv::Mat image)
 bool TensorrtYolo::PreprocessInputs(cv::Mat& image)
 {
     // Resize image to have the same size as needed by the neural network
-    cv::resize(image, image, {GetInputImageHeight(), GetInputImageWidth()}, 0, 0, cv::INTER_LINEAR);
+    cv::resize(image, image, cv::Size(GetInputImageWidth(), GetInputImageHeight()), 0, 0, cv::INTER_LINEAR);
     // Opencv Mat is BGR by default. Image input to network is RGB
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
     // Total size in bytes to copy to GPU
     const size_t size = image.channels() * image.total() * sizeof(float);
-    // Allocate memory for input blob
-    float* blob = new float[image.total() * image.channels()];
-
+    // Get pointer to mapped memory for input images
+    float* blob = static_cast<float*>(inputs_["images"].CPU);
     // Normalize input pixels and transpose image from opencv NHWC to NCHW
     for (size_t c = 0; c < image.channels(); c++)
     {
@@ -95,14 +94,6 @@ bool TensorrtYolo::PreprocessInputs(cv::Mat& image)
             }
         }
     }
-
-    if (!CudaCopyToDevice(inputs_["images"].CUDA, blob, size))
-    {
-        gLogger.log(nvinfer1::ILogger::Severity::kERROR, "Failed to copy image to device...");
-        return false;
-    }
-
-    delete[] blob;
 
     return true;
 }
