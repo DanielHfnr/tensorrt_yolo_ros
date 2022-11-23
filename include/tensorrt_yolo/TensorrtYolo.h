@@ -203,15 +203,9 @@ public:
 
     bool Detect(cv::Mat image);
 
-    uint32_t GetNumDetections() const
-    {
-        return num_detections_;
-    }
+    uint32_t GetNumDetections() const;
 
-    std::shared_ptr<ObjectBoundingBox[]> GetDetections() const
-    {
-        return bounding_boxes_;
-    }
+    std::shared_ptr<ObjectBoundingBox[]> GetDetections() const;
 
 private:
     bool PreprocessInputs(cv::Mat& image);
