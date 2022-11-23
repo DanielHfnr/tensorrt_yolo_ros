@@ -147,7 +147,7 @@ uint32_t TensorrtYolo::GetNumDetections() const
     return num_detections_;
 }
 
-std::shared_ptr<TensorrtYolo::ObjectBoundingBox[]> TensorrtYolo::GetDetections() const
+std::shared_ptr<ObjectBoundingBox[]> TensorrtYolo::GetDetections() const
 {
     return bounding_boxes_;
 }
