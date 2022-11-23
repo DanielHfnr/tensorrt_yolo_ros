@@ -34,8 +34,10 @@ void TensorrtYoloNode::Init()
     nh_private_.getParam("device", device);
     nh_private_.getParam("allow_gpu_fallback", allow_gpu_fallback);
 
-    nh_private_.getParam("image_topic", image_topic_);
-    nh_private_.getParam("bounding_boxes_topic", bounding_boxes_topic_);
+    nh_private_.getParam("image_topic_in", image_topic_in_);
+    nh_private_.getParam("image_topic_out", image_topic_out_);
+    nh_private_.getParam("bounding_boxes_topic_out", bounding_boxes_topic_);
+    nh_private_.getParam("show_output_image", show_output_image_);
 
     InitRosSubscribers();
     InitRosPublishers();
@@ -50,12 +52,13 @@ void TensorrtYoloNode::InitRosPublishers()
 {
     ROS_INFO("Intializing ROS publishers...");
     bboxes_pub_ = nh_private_.advertise<vision_msgs::BoundingBox2DArray>(bounding_boxes_topic_, 10);
+    image_pub_ = it_.advertise(image_topic_out_, 1);
 }
 
 void TensorrtYoloNode::InitRosSubscribers()
 {
     ROS_INFO("Intializing ROS subscribers...");
-    image_sub_ = it_.subscribe(image_topic_, 1, &TensorrtYoloNode::ImageCallback, this);
+    image_sub_ = it_.subscribe(image_topic_in_, 1, &TensorrtYoloNode::ImageCallback, this);
 }
 
 void TensorrtYoloNode::ImageCallback(const sensor_msgs::ImageConstPtr& image)
@@ -76,20 +79,27 @@ void TensorrtYoloNode::ImageCallback(const sensor_msgs::ImageConstPtr& image)
 
 void TensorrtYoloNode::Cycle()
 {
-    // Call detect function
-    uint32_t num_detections = neural_net_.Detect(image_);
+    cv::Mat output_image = image_.clone();
 
-    ROS_INFO_STREAM("Num detections: " << std::to_string(num_detections));
+    bool inference_success = neural_net_.Detect(image_);
 
+    if (!inference_success)
+    {
+        ROS_INFO_STREAM("Failed to run inference...");
+    }
+
+    uint32_t num_detections = neural_net_.GetNumDetections();
     auto detections = neural_net_.GetDetections();
+    ROS_INFO_STREAM("Num detections: " << std::to_string(num_detections));
 
     vision_msgs::BoundingBox2DArray bounding_boxes;
     bounding_boxes.header.stamp = ros::Time::now();
     bounding_boxes.header.frame_id = frame_id_;
 
     // Loop through all detection and convert to ROS message
-    for (uint32_t i; i < num_detections; ++i)
+    for (uint32_t i = 0; i < num_detections; ++i)
     {
+        // Prepare output bouding box and convert to ROS format
         vision_msgs::BoundingBox2D box_2d;
 
         float center_x, center_y;
@@ -103,9 +113,22 @@ void TensorrtYoloNode::Cycle()
         box_2d.size_y = height;
 
         bounding_boxes.boxes.push_back(box_2d);
+
+        // Render bounding boxes in image
+        cv::rectangle(output_image, cv::Rect(detections[i].Left, detections[i].Top, width, height), (0, 0, 255), 2);
     }
+
+    // Debug purposes only. Show rendered image in opencv window
+    if (show_output_image_ && !output_image.empty())
+    {
+        cv::imshow("object_detection", output_image);
+        cv::waitKey(3);
+    }
+
     // Publish the bounding boxes
     bboxes_pub_.publish(bounding_boxes);
 
-    // TODO: Render on image and publish image topic
+    // Publish rendere image with bounding boxes
+    sensor_msgs::ImagePtr image_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output_image).toImageMsg();
+    image_pub_.publish(image_msg);
 }

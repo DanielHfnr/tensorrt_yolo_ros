@@ -10,8 +10,10 @@
       <param name="allow_gpu_fallback" value="true" type="bool" />
 
 
-      <param name="image_topic" value="/camera/image_raw" type="str" />
-      <param name="bounding_boxes_topic" value="/yolo/bounding_boxes" type="str" />
+      <param name="image_topic_in" value="/camera/image_raw" type="str" />
+      <param name="image_topic_out" value="/camera/image_detections" type="str" />
+      <param name="bounding_boxes_topic_out" value="/object_detection/bounding_boxes_2d" type="str" />
 
+      <param name="show_output_image" value="false" type="bool" />
   </node>
 </launch>

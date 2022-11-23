@@ -28,10 +28,13 @@ private:
     ros::NodeHandle nh_private_{};
     image_transport::ImageTransport it_;
 
-    std::string image_topic_{};
+    bool show_output_image_{false};
+    std::string image_topic_in_{};
+    std::string image_topic_out_{};
     std::string bounding_boxes_topic_{};
 
     image_transport::Subscriber image_sub_{};
+    image_transport::Publisher image_pub_{};
     ros::Publisher bboxes_pub_{};
 
     cv::Mat image_{};

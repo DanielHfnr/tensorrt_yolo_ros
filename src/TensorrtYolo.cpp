@@ -42,41 +42,44 @@ bool TensorrtYolo::Init(std::string onnx_model_path, std::string class_labels_pa
     return true;
 }
 
-uint32_t TensorrtYolo::Detect(cv::Mat image)
+bool TensorrtYolo::Detect(cv::Mat image)
 {
+    num_detections_ = 0;
+
+    const int input_image_width = image.cols;
+    const int input_image_height = image.rows;
+
     if (image.empty())
     {
         gLogger.log(nvinfer1::ILogger::Severity::kWARNING, "Input image empty...");
-        return 0;
+        return false;
     }
-
-    num_detections_ = 0;
 
     if (!PreprocessInputs(image))
     {
         gLogger.log(nvinfer1::ILogger::Severity::kERROR, "Failed to preprocess network inputs...");
-        return -1;
+        return false;
     }
 
     if (!ProcessNetwork())
     {
         gLogger.log(nvinfer1::ILogger::Severity::kERROR, "Failed to run inference...");
-        return -1;
+        return false;
     }
 
-    if (!PostporcessOutputs(image.cols, image.rows))
+    if (!PostporcessOutputs(input_image_width, input_image_height))
     {
         gLogger.log(nvinfer1::ILogger::Severity::kERROR, "Failed to postprocess network outputs...");
-        return -1;
+        return false;
     }
 
-    return num_detections_;
+    return true;
 }
 
 bool TensorrtYolo::PreprocessInputs(cv::Mat& image)
 {
     // Resize image to have the same size as needed by the neural network
-    cv::resize(image, image, cv::Size(GetInputImageWidth(), GetInputImageHeight()), 0, 0, cv::INTER_LINEAR);
+    cv::resize(image, image, cv::Size(GetNetworkInputWidth(), GetNetworkInputHeight()), 0, 0, cv::INTER_LINEAR);
     // Opencv Mat is BGR by default. Image input to network is RGB
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
     // Total size in bytes to copy to GPU
@@ -108,29 +111,32 @@ bool TensorrtYolo::PostporcessOutputs(const uint32_t in_image_width, const uint3
 
     num_detections_ = *num_dets;
 
+    const float image_scale_factor_x = float(in_image_width) / float(GetNetworkInputWidth());
+    const float image_scale_factor_y = float(in_image_height) / float(GetNetworkInputHeight());
+
     // TODO bounding boxes are in network image size. Rescale if image was resized on nn input
     for (int i = 0; i < num_detections_; i++)
     {
         bounding_boxes_[i].Instance = i;
         bounding_boxes_[i].ClassID = detected_classes[i];
         bounding_boxes_[i].Confidence = detected_scores[i];
-
-        bounding_boxes_[i].Left = detected_scores[i * 4];
-        bounding_boxes_[i].Bottom = detected_scores[i * 4 + 1];
-        bounding_boxes_[i].Right = detected_scores[i * 4 + 2];
-        bounding_boxes_[i].Top = detected_scores[i * 4 + 3];
+        // Actual bounding box coordinates
+        bounding_boxes_[i].Left = detected_boxes[i * 4] * image_scale_factor_x;
+        bounding_boxes_[i].Top = detected_boxes[i * 4 + 1] * image_scale_factor_y;
+        bounding_boxes_[i].Right = detected_boxes[i * 4 + 2] * image_scale_factor_x;
+        bounding_boxes_[i].Bottom = detected_boxes[i * 4 + 3] * image_scale_factor_y;
     }
 
     return true;
 }
 
-uint32_t TensorrtYolo::GetInputImageWidth()
+uint32_t TensorrtYolo::GetNetworkInputWidth()
 {
     nvinfer1::Dims dims = GetInputDims("images");
     return dims.d[3];
 }
 
-uint32_t TensorrtYolo::GetInputImageHeight()
+uint32_t TensorrtYolo::GetNetworkInputHeight()
 {
     nvinfer1::Dims dims = GetInputDims("images");
     return dims.d[2];

@@ -201,7 +201,12 @@ public:
     bool Init(std::string onnx_model_path, std::string class_labels_path, PrecisionType precision, DeviceType device,
         bool allow_gpu_fallback);
 
-    uint32_t Detect(cv::Mat image);
+    bool Detect(cv::Mat image);
+
+    uint32_t GetNumDetections() const
+    {
+        return num_detections_;
+    }
 
     std::shared_ptr<ObjectBoundingBox[]> GetDetections() const
     {
@@ -212,8 +217,8 @@ private:
     bool PreprocessInputs(cv::Mat& image);
     bool PostporcessOutputs(const uint32_t in_image_width, const uint32_t in_image_height);
 
-    uint32_t GetInputImageWidth();
-    uint32_t GetInputImageHeight();
+    uint32_t GetNetworkInputWidth();
+    uint32_t GetNetworkInputHeight();
 
 private:
     std::string yolo_onnx_model_filepath_{}; //!< Filepath to ONNX model
