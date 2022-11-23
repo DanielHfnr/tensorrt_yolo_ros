@@ -14,6 +14,6 @@
       <param name="image_topic_out" value="/camera/image_detections" type="str" />
       <param name="bounding_boxes_topic_out" value="/object_detection/bounding_boxes_2d" type="str" />
 
-      <param name="show_output_image" value="false" type="bool" />
+      <param name="show_output_image" value="true" type="bool" />
   </node>
 </launch>

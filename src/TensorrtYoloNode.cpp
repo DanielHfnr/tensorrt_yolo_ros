@@ -5,6 +5,8 @@
 #include <ros/console.h>
 #include <vision_msgs/BoundingBox2DArray.h>
 
+#include <fstream>
+
 TensorrtYoloNode::TensorrtYoloNode(ros::NodeHandle nh, ros::NodeHandle nh_private)
     : nh_(nh)
     , nh_private_(nh_private)
@@ -19,21 +21,19 @@ void TensorrtYoloNode::Init()
 {
     ROS_INFO("Intializing ROS params...");
 
-    std::string yolo_onnx_model_filepath{};
     std::string class_labels_filepath{};
-
+    std::string yolo_onnx_model_filepath{};
     std::string precision{};
     std::string device{};
     bool allow_gpu_fallback{false};
 
     // Init ROS params
     nh_private_.getParam("yolo_onnx_model", yolo_onnx_model_filepath);
-    nh_private_.getParam("class_labels_file", class_labels_filepath);
-
     nh_private_.getParam("precision", precision);
     nh_private_.getParam("device", device);
     nh_private_.getParam("allow_gpu_fallback", allow_gpu_fallback);
 
+    nh_private_.getParam("class_labels_file", class_labels_filepath);
     nh_private_.getParam("image_topic_in", image_topic_in_);
     nh_private_.getParam("image_topic_out", image_topic_out_);
     nh_private_.getParam("bounding_boxes_topic_out", bounding_boxes_topic_);
@@ -41,11 +41,11 @@ void TensorrtYoloNode::Init()
 
     InitRosSubscribers();
     InitRosPublishers();
+    class_labels_ = ReadClassLabels(class_labels_filepath);
 
     ROS_INFO("Intializing neural network...");
 
-    neural_net_.Init(yolo_onnx_model_filepath, class_labels_filepath, precisionTypeFromStr(precision),
-        deviceTypeFromStr(device), true);
+    neural_net_.Init(yolo_onnx_model_filepath, precisionTypeFromStr(precision), deviceTypeFromStr(device), true);
 }
 
 void TensorrtYoloNode::InitRosPublishers()
@@ -116,6 +116,10 @@ void TensorrtYoloNode::Cycle()
 
         // Render bounding boxes in image
         cv::rectangle(output_image, cv::Rect(detections[i].Left, detections[i].Top, width, height), (0, 0, 255), 2);
+        cv::putText(output_image, GetClassString(detections[i].ClassID),
+            cv::Point(detections[i].Left, detections[i].Top), // top-left position
+            cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(0, 0, 255), 2);
+        // TODO: Add confidence
     }
 
     // Debug purposes only. Show rendered image in opencv window
@@ -131,4 +135,34 @@ void TensorrtYoloNode::Cycle()
     // Publish rendere image with bounding boxes
     sensor_msgs::ImagePtr image_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output_image).toImageMsg();
     image_pub_.publish(image_msg);
+}
+
+std::vector<std::string> TensorrtYoloNode::ReadClassLabels(const std::string& class_labels_filepath)
+{
+    std::vector<std::string> class_labels{};
+
+    std::fstream class_labels_file;
+    class_labels_file.open(class_labels_filepath);
+
+    if (class_labels_file.is_open())
+    {
+        std::string str;
+        while (getline(class_labels_file, str))
+        {
+            class_labels.push_back(str);
+        }
+        class_labels_file.close();
+    }
+
+    return class_labels;
+}
+
+std::string TensorrtYoloNode::GetClassString(const uint32_t class_id)
+{
+    if (class_id >= 0 && class_id < class_labels_.size())
+    {
+        return class_labels_[class_id];
+    }
+
+    return "";
 }

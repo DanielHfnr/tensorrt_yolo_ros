@@ -17,8 +17,7 @@ public:
     TensorrtYolo();
     ~TensorrtYolo();
 
-    bool Init(std::string onnx_model_path, std::string class_labels_path, PrecisionType precision, DeviceType device,
-        bool allow_gpu_fallback);
+    bool Init(std::string onnx_model_path, PrecisionType precision, DeviceType device, bool allow_gpu_fallback);
 
     bool Detect(cv::Mat image);
 
@@ -35,7 +34,6 @@ private:
 
 private:
     std::string yolo_onnx_model_filepath_{}; //!< Filepath to ONNX model
-    std::string class_labels_filepath_{};    //!< Filepath to txt file mapping class names to integers
 
     std::shared_ptr<ObjectBoundingBox[]> bounding_boxes_{}; //!< list of 2d bounding box detections
     uint32_t num_detections_{0};                            //!< current number of detections

@@ -7,11 +7,10 @@ TensorrtYolo::TensorrtYolo() {}
 
 TensorrtYolo::~TensorrtYolo() {}
 
-bool TensorrtYolo::Init(std::string onnx_model_path, std::string class_labels_path, PrecisionType precision,
-    DeviceType device, bool allow_gpu_fallback)
+bool TensorrtYolo::Init(
+    std::string onnx_model_path, PrecisionType precision, DeviceType device, bool allow_gpu_fallback)
 {
     yolo_onnx_model_filepath_ = onnx_model_path;
-    class_labels_filepath_ = class_labels_path;
 
     // General model loading
     if (!LoadNetwork(onnx_model_path, precision, device, allow_gpu_fallback))
@@ -114,7 +113,7 @@ bool TensorrtYolo::PostporcessOutputs(const uint32_t in_image_width, const uint3
     const float image_scale_factor_x = float(in_image_width) / float(GetNetworkInputWidth());
     const float image_scale_factor_y = float(in_image_height) / float(GetNetworkInputHeight());
 
-    // TODO bounding boxes are in network image size. Rescale if image was resized on nn input
+    // TODO out of bounds check of bounding box coordinates <0 and > image_width etc.
     for (int i = 0; i < num_detections_; i++)
     {
         bounding_boxes_[i].Instance = i;
