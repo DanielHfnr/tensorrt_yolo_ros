@@ -102,7 +102,9 @@ bool TensorrtYolo::PreprocessInputs(cv::Mat& image)
 
 bool TensorrtYolo::PostporcessOutputs(const uint32_t in_image_width, const uint32_t in_image_height)
 {
-    // TODO: Clear bbox outputs array?
+    // Reset object bounding boxes
+    std::memset(bounding_boxes_.get(), 0, max_detections_ * sizeof(ObjectBoundingBox));
+
     int32_t* num_dets = static_cast<int32_t*>(outputs_["num_dets"].CPU);
     int32_t* detected_classes = static_cast<int32_t*>(outputs_["det_classes"].CPU);
     float* detected_scores = static_cast<float*>(outputs_["det_scores"].CPU);
@@ -110,20 +112,31 @@ bool TensorrtYolo::PostporcessOutputs(const uint32_t in_image_width, const uint3
 
     num_detections_ = *num_dets;
 
-    const float image_scale_factor_x = float(in_image_width) / float(GetNetworkInputWidth());
-    const float image_scale_factor_y = float(in_image_height) / float(GetNetworkInputHeight());
+    const float image_scale_factor_x = static_cast<float>(in_image_width) / static_cast<float>(GetNetworkInputWidth());
+    const float image_scale_factor_y
+        = static_cast<float>(in_image_height) / static_cast<float>(GetNetworkInputHeight());
 
-    // TODO out of bounds check of bounding box coordinates <0 and > image_width etc.
     for (int i = 0; i < num_detections_; i++)
     {
         bounding_boxes_[i].Instance = i;
         bounding_boxes_[i].ClassID = detected_classes[i];
         bounding_boxes_[i].Confidence = detected_scores[i];
+
+        // Out of bounds check for bounding boxes
+        float left = detected_boxes[i * 4] * image_scale_factor_x;
+        float top = detected_boxes[i * 4 + 1] * image_scale_factor_y;
+        float right = detected_boxes[i * 4 + 2] * image_scale_factor_x;
+        float bottom = detected_boxes[i * 4 + 3] * image_scale_factor_y;
+        left = std::max(std::min(left, static_cast<float>(in_image_width - 1)), 0.f);
+        top = std::max(std::min(top, static_cast<float>(in_image_height - 1)), 0.f);
+        right = std::max(std::min(right, static_cast<float>(in_image_width - 1)), 0.f);
+        bottom = std::max(std::min(bottom, static_cast<float>(in_image_width - 1)), 0.f);
+
         // Actual bounding box coordinates
-        bounding_boxes_[i].Left = detected_boxes[i * 4] * image_scale_factor_x;
-        bounding_boxes_[i].Top = detected_boxes[i * 4 + 1] * image_scale_factor_y;
-        bounding_boxes_[i].Right = detected_boxes[i * 4 + 2] * image_scale_factor_x;
-        bounding_boxes_[i].Bottom = detected_boxes[i * 4 + 3] * image_scale_factor_y;
+        bounding_boxes_[i].Left = left;
+        bounding_boxes_[i].Top = top;
+        bounding_boxes_[i].Right = right;
+        bounding_boxes_[i].Bottom = bottom;
     }
 
     return true;
