@@ -11,7 +11,7 @@
 
 #include <opencv2/opencv.hpp>
 
-class TensorrtYolo : public TensorrtBase
+class TensorrtYolo final : public TensorrtBase
 {
 public:
     TensorrtYolo();

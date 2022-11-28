@@ -118,8 +118,12 @@ void TensorrtYoloNode::Cycle()
         cv::rectangle(output_image, cv::Rect(detections[i].Left, detections[i].Top, width, height), (0, 0, 255), 2);
         cv::putText(output_image, GetClassString(detections[i].ClassID),
             cv::Point(detections[i].Left, detections[i].Top), // top-left position
-            cv::FONT_HERSHEY_DUPLEX, 1.0, CV_RGB(0, 0, 255), 2);
+            cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 0, 255), 2);
+
         // TODO: Add confidence
+        // cv::putText(output_image, std::to_string(detections[i].Confidence),
+        //    cv::Point(detections[i].Left, detections[i].Top), // top-left position
+        //    cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0, 0, 255), 2);
     }
 
     // Debug purposes only. Show rendered image in opencv window
