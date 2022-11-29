@@ -39,7 +39,13 @@ Clone the repository into your catkin workspace src folder:
 git clone https://github.com/DanielHfnr/tensorrt_yolo_ros.git
 ```
 
-Build you workspace using `catkin_make` or `catkin build`.
+Clone the TensorRT Base package which is a catkin package library that serves as a base class for this project:
+
+```
+git clone https://github.com/DanielHfnr/tensorrt_base.git
+```
+
+Build your workspace using `catkin_make` or `catkin build`.
 
 Launch the ROS node using the provided launch file (adjust topic names where needed):
 
@@ -72,3 +78,4 @@ roslaunch tensorrt_yolo tensorrt_yolo.launch
 
 To test if everything works correctly get camera input data. For that you can for examples use the following ros package: [http://wiki.ros.org/video_stream_opencv](http://wiki.ros.org/video_stream_opencv)
 
+g
